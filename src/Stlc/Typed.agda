@@ -14,18 +14,20 @@ open import Stlc.Untyped
 private variable
   m n  : ℕ
   A B  : Type
-  t t′ t₁ t₁′  : Term _
+  t t′ t″ t₁ t₁′ : Term _
   Γ    : Con _
   x    : Fin _
 
-infix 4 _∷_∈_ _⊢_∷_ _⊢_⇒_∷_
+infix 4 _∷_∈_ _⊢_∷_ _⊢_⇒_∷_ _⊢_≡_∷_
 
 -- Well-formed variable
+
 data _∷_∈_ : (x : Fin n) (A : Type) (Γ : Con n) → Set where
   here  : zero ∷ A ∈ Γ ▹ A
   there : x ∷ A ∈ Γ → suc x ∷ A ∈ Γ ▹ B
 
 -- Well-formed term of a type
+
 data _⊢_∷_ (Γ : Con n) : Term n → Type → Set where
   var : 
     x ∷ A ∈ Γ → 
@@ -52,41 +54,70 @@ data _⊢_∷_ (Γ : Con n) : Term n → Type → Set where
     -------------
     Γ ⊢ suc t ∷ N
 
+-- Term equality
+
+data _⊢_≡_∷_ (Γ : Con n) : Term n → Term n → Type → Set where
+  refl : 
+    Γ ⊢ t ∷ A →
+    -------------
+    Γ ⊢ t ≡ t ∷ A
+
+  sym : 
+    Γ ⊢ t ≡ t′ ∷ A →
+    ----------------
+    Γ ⊢ t′ ≡ t ∷ A
+
+  trans :
+    Γ ⊢ t ≡ t′ ∷ A → 
+    Γ ⊢ t′ ≡ t″ ∷ A →
+    -----------------
+    Γ ⊢ t ≡ t″ ∷ A
+
+  β-red :
+    Γ ▹ A ⊢ t ∷ B →
+    Γ ⊢ t₁ ∷ A →
+    ------------------------------
+    Γ ⊢ lam t · t₁ ≡ t [ t₁ ]₀ ∷ A
+
+  η-equal :
+    Γ ⊢ t ∷ A ⟶ B →
+    Γ ⊢ t₁ ∷ A ⟶ B →
+    Γ ▹ A ⊢ wk1 t · var zero ≡ wk1 t₁ · var zero ∷ B →
+    --------------------------------------------------
+    Γ ⊢ t ≡ t₁ ∷ A ⟶ B
+
+  ·-cong :
+    Γ ⊢ t ≡ t′ ∷ A ⟶ B →
+    Γ ⊢ t₁ ≡ t₁′ ∷ A →
+    -------------------------
+    Γ ⊢ t · t₁ ≡ t′ · t₁′ ∷ B
+
+  suc-cong :
+    Γ ⊢ t ≡ t′ ∷ A →
+    ----------------------
+    Γ ⊢ suc t ≡ suc t′ ∷ A
+     
+-- Reduction to WHNF
 
 data _⊢_⇒_∷_ (Γ : Con n) : Term n → Term n → Type → Set where
-  β-lam : 
+  β-red : 
     Γ ▹ A ⊢ t ∷ B →
     Γ ⊢ t₁ ∷ A → 
     ------------------------------
     Γ ⊢ lam t · t₁ ⇒ t [ t₁ ]₀ ∷ B
 
-  ξ-lam :
-    Γ ▹ A ⊢ t ⇒ t′ ∷ B →
-    ----------------------
-    Γ ⊢ lam t ⇒ lam t′ ∷ B
-
-  ξ-·ₗ :
-    Neutral t → -- fel ?
-    Γ ⊢ t ⇒ t′ ∷ A →
+  ·-cong :
+    Γ ⊢ t ⇒ t′ ∷ A ⟶ B →
+    Γ ⊢ t₁ ∷ A →
     ------------------------
-    Γ ⊢ t · t₁ ⇒ t′ · t₁ ∷ A
+    Γ ⊢ t · t₁ ⇒ t′ · t₁ ∷ B
 
-  ξ-·ᵣ :
-    Normal t →
-    Γ ⊢ t₁ ⇒ t₁′ ∷ A →
-    ------------------------
-    Γ ⊢ t · t₁ ⇒ t · t₁′ ∷ A
-
-  ξ-suc :
-    Γ ⊢ t ⇒ t′ ∷ N →
-    ----------------------
-    Γ ⊢ suc t ⇒ suc t′ ∷ N
+-- Reduction closure.
 
 _⊢_⇒*_∷_ : Con n → Term n → Term n → Type → Set
 Γ ⊢ t ⇒* t′ ∷ A = Star (λ t t′ → Γ ⊢ t ⇒ t′ ∷ A) t t′
 
+-- Reduction to WHNF.
+
 _⊢_↘_∷_ : Con n → Term n → Term n → Type → Set
-Γ ⊢ t ↘ t′ ∷ A = (Γ ⊢ t ⇒* t′ ∷ A) × Normal t′
-
-
-
+Γ ⊢ t ↘ t′ ∷ A = (Γ ⊢ t ⇒* t′ ∷ A) × Whnf t′

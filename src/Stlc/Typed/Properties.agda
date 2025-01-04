@@ -8,33 +8,43 @@ open import Relation.Binary.Construct.Closure.ReflexiveTransitive
   renaming (ε to []; _◅_ to _∷_)
 import Relation.Binary.PropositionalEquality as PE
 open PE.≡-Reasoning
-open import Data.Product using (_×_; _,_)
 open import Data.Empty using (⊥-elim)
+open import Data.Product using (∃; ∃₂; _×_; _,_)
+open import Data.Sum using (_⊎_; inj₁; inj₂)
 open import Relation.Nullary using (¬_)
 
 open import Stlc.Untyped
 open import Stlc.Typed
 
 private variable
-  m n  : ℕ
-  A B  : Type
-  t t′ t₁ t₁′ t″ : Term _
-  Γ    : Con _
-  x    : Fin _
+  n       : ℕ
+  A B     : Type
+  t t′ t″ : Term _
+  Γ       : Con _
 
-normal-do-not-reduce : Γ ⊢ t ⇒ t′ ∷ A → ¬ (Normal t)
-normal-do-not-reduce (β-lam x x₁) (neutral (· ()))
-normal-do-not-reduce (ξ-lam x) (lam y) = normal-do-not-reduce x y
-normal-do-not-reduce (ξ-·ₗ x x₁) y = normal-do-not-reduce x₁ (neutral x)
-normal-do-not-reduce (ξ-·ᵣ (neutral x) x₁) (neutral (· y)) = {! !}
-normal-do-not-reduce (ξ-suc x) (suc y) = normal-do-not-reduce x y
+-- Neutral term do not reduce.
 
-red-det : Γ ⊢ t ⇒ t′ ∷ A → Γ ⊢ t ⇒ t″ ∷ A → t′ PE.≡ t″
-red-det (β-lam x x₁) (β-lam y y₁) = PE.refl
-red-det (β-lam p p₁) (ξ-·ᵣ normal q) = ⊥-elim {! !}
+ne-reduction : Γ ⊢ t ⇒ t′ ∷ A → ¬ (Ne t)
+ne-reduction (β-red x x₂) (app ())
+ne-reduction (·-cong x x₂) (app x₁) = ne-reduction x x₁
 
+-- WHNFs do not reduce.
 
-red-det (ξ-lam p) q = {! !}
-red-det (ξ-·ₗ x p) q = {! !}
-red-det (ξ-·ᵣ x p) q = {! !}
-red-det (ξ-suc p) q = {! !}
+whnf-reduction : Γ ⊢ t ⇒ t′ ∷ A → ¬ (Whnf t)
+whnf-reduction (β-red x x₂) (ne (app ()))
+whnf-reduction (·-cong x x₂) (ne (app x₁)) = whnf-reduction x (ne x₁)
+
+-- Reduction is deterministic.
+
+det-reduction : {Γ : Con n} → Γ ⊢ t ⇒ t′ ∷ A → Γ ⊢ t ⇒ t″ ∷ B → t′ PE.≡ t″
+det-reduction (β-red x x₂) (β-red x₁ x₃) = PE.refl
+det-reduction (·-cong x x₂) (·-cong x₁ x₃) = PE.cong (_· _) (det-reduction x x₁)
+
+-- Reduction to WHNF is deterministic.
+
+det-reduction-↘whnf : Γ ⊢ t ↘ t′ ∷ A → Γ ⊢ t ↘ t″ ∷ B → t′ PE.≡ t″
+det-reduction-↘whnf ([] , w) ([] , w₁) = PE.refl
+det-reduction-↘whnf ([] , w) (x₁ ∷ xs₁ , w₁) = ⊥-elim (whnf-reduction x₁ w)
+det-reduction-↘whnf (x ∷ xs , w) ([] , w₁) = ⊥-elim (whnf-reduction x w₁)
+det-reduction-↘whnf (x ∷ xs , w) (x₁ ∷ xs₁ , w₁) = 
+  det-reduction-↘whnf (xs , w) (PE.subst (_ ⊢_↘ _ ∷ _) (det-reduction x₁ x) (xs₁ , w₁)) 

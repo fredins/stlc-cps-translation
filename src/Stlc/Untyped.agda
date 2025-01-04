@@ -103,12 +103,13 @@ data Con : ℕ → Set where
 --------------------------------------------------------------------------------
 -- * Neutral and normal terms
 
-data Neutral {n} : Term n → Set where
-  var : (x : Fin n) → Neutral (var x)
-  ·_ : Neutral t → Neutral (t · t₁)
+mutual
+  data Ne {n} : Term n → Set where
+    var : (x : Fin n) → Ne (var x)
+    app : Ne t → Ne (t · t₁)
 
-data Normal {n} : Term n → Set where
-  neutral : Neutral t → Normal t
-  lam     : Normal t → Normal (lam t)
-  zero    : Normal zero
-  suc     : Normal t → Normal (suc t)
+  data Whnf {n} : Term n → Set where
+    ne   : Ne t → Whnf t
+    lam  : Whnf (lam t)
+    zero : Whnf zero
+    suc  : Whnf (suc t)
