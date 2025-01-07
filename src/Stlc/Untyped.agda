@@ -3,6 +3,8 @@ module Stlc.Untyped where
 
 open import Data.Nat using (ℕ; zero; suc; 2+)
 open import Data.Fin using (Fin; zero; suc; #_)
+import Relation.Binary.PropositionalEquality as PE
+open PE.≡-Reasoning
 
 infixr 5 _⟶_ 
 infixl 5 _·_ 
@@ -26,37 +28,37 @@ private variable
 -- * Weakening
 
 data Wk : ℕ → ℕ → Set where
-  i : ∀ {m} → Wk m m
-  ↑_       : ∀ {m n} → Wk m n → Wk (suc m) n
-  ⇑_       : ∀ {m n} → Wk m n → Wk (suc m) (suc n)
+  id : ∀ {m} → Wk m m
+  ↑_ : ∀ {m n} → Wk m n → Wk (suc m) n
+  ⇑_ : ∀ {m n} → Wk m n → Wk (suc m) (suc n)
 
 infixl 5 _∙_ 
 
-_∙_ : ∀ {l m n} (η : Wk l m) (η₁ : Wk m n) → Wk l n
-i     ∙ η₁     = η₁
-(↑ η) ∙ η₁     = ↑ (η ∙ η₁)
-(⇑ η) ∙ i      = ⇑ η
-(⇑ η) ∙ (↑ η₁) = ↑ (η ∙ η₁)
-(⇑ η) ∙ (⇑ η₁) = ⇑ (η ∙ η₁)
+_∙_ : ∀ {l m n} (ρ : Wk l m) (ρ₁ : Wk m n) → Wk l n
+id    ∙ ρ₁     = ρ₁
+(↑ ρ) ∙ ρ₁     = ↑ (ρ ∙ ρ₁)
+(⇑ ρ) ∙ id     = ⇑ ρ
+(⇑ ρ) ∙ (↑ ρ₁) = ↑ (ρ ∙ ρ₁)
+(⇑ ρ) ∙ (⇑ ρ₁) = ⇑ (ρ ∙ ρ₁)
 
-wkVar : {m n : ℕ} (η : Wk m n) (x : Fin n) → Fin m
-wkVar i     x       = x
-wkVar (↑ η) x       = suc (wkVar η x)
-wkVar (⇑ η) zero    = zero
-wkVar (⇑ η) (suc x) = suc (wkVar η x)
+wkVar : {m n : ℕ} (ρ : Wk m n) (x : Fin n) → Fin m
+wkVar id    x       = x
+wkVar (↑ ρ) x       = suc (wkVar ρ x)
+wkVar (⇑ ρ) zero    = zero
+wkVar (⇑ ρ) (suc x) = suc (wkVar ρ x)
 
-wk : ∀ {m n} (η : Wk m n) (t : Term n) → Term m
-wk η (var x)  = var (wkVar η x)
-wk η (lam t)  = lam (wk (⇑ η) t)
-wk η (t · t₁) = wk η t · wk η t₁
-wk η zero     = zero
-wk η (suc t)  = suc (wk η t)
+wk : ∀ {m n} (ρ : Wk m n) (t : Term n) → Term m
+wk ρ (var x)  = var (wkVar ρ x)
+wk ρ (lam t)  = lam (wk (⇑ ρ) t)
+wk ρ (t · t₁) = wk ρ t · wk ρ t₁
+wk ρ zero     = zero
+wk ρ (suc t)  = suc (wk ρ t)
 
 wk1 : ∀ {m} → Term m → Term (suc m)
-wk1 = wk (↑ i)
+wk1 = wk (↑ id)
 
 wk2 : ∀ {m} → Term m → Term (2+ m)
-wk2 = wk (↑ ↑ i)
+wk2 = wk (↑ ↑ id)
 
 --------------------------------------------------------------------------------
 -- * Substitution 
@@ -65,11 +67,11 @@ Subst : ℕ → ℕ → Set
 Subst m n = Fin n → Term m
 
 _↑ : ∀ {m n} (σ : Subst m n) → Subst (suc m) n
-(σ ↑) x = wk (↑ i) (σ x)
+(σ ↑) x = wk1 (σ x)
 
 _⇑ : ∀ {m n} (σ : Subst m n) → Subst (suc m) (suc n)
 (σ ⇑) zero    = var zero
-(σ ⇑) (suc x) = (σ ↑) x
+(σ ⇑) (suc x) = wk1 (σ x)
 
 _[_] : ∀ {m n} (t : Term n) (σ : Subst m n) → Term m
 var x    [ σ ] = σ x
@@ -83,13 +85,19 @@ idSubst = var
 
 consSubst : ∀ {m n} → Subst m n → Term m → Subst m (suc n)
 consSubst σ t zero    = t
-consSubst σ t (suc x ) = σ x
+consSubst σ t (suc x) = σ x
 
 sgSubst : ∀ {m} → Term m → Subst m (suc m)
 sgSubst = consSubst idSubst
 
 _[_]₀ : ∀ {m} → Term (suc m) → Term m → Term m
 t [ t₁ ]₀ = t [ sgSubst t₁ ]
+
+head : ∀ {m n} → Subst m (suc n) → Term m
+head σ = σ zero
+
+tail : ∀ {m n} → Subst m (suc n) → Subst m n
+tail σ x = σ (suc x)
 
 --------------------------------------------------------------------------------
 -- * Contexts 
