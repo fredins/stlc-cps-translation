@@ -13,6 +13,7 @@ open import Data.Product using (∃; ∃₂; _×_; _,_)
 open import Data.Sum using (_⊎_; inj₁; inj₂)
 open import Relation.Nullary using (¬_)
 open import Function using (_∘_)
+open import Relation.Nullary using (Dec)
 
 open import Stlc.Untyped
 open import Stlc.Untyped.Properties
@@ -20,8 +21,8 @@ open import Stlc.Typed
 
 private variable
   m n        : ℕ
-  x          : Fin _
-  A B        : Type
+  x y        : Fin _
+  A B C      : Type
   t t′ t″ t₁ : Term _
   Γ          : Con _
   ρ          : Wk _ _
@@ -95,18 +96,22 @@ no-whnf-reduction (·-cong x x₂) (ne (app x₁)) = no-whnf-reduction x (ne x�
 
 -- Reduction is deterministic.
 
-reduction-det : {Γ : Con n} → Γ ⊢ t ⇒ t′ ∷ A → Γ ⊢ t ⇒ t″ ∷ B → t′ PE.≡ t″
-reduction-det (β-red x x₂) (β-red x₁ x₃) = PE.refl
-reduction-det (·-cong x x₂) (·-cong x₁ x₃) = PE.cong (_· _) (reduction-det x x₁)
+reduction-deterministic : Γ ⊢ t ⇒ t′ ∷ A → Γ ⊢ t ⇒ t″ ∷ B → t′ PE.≡ t″
+reduction-deterministic (β-red x x₂) (β-red x₁ x₃) = PE.refl
+reduction-deterministic (·-cong x x₂) (·-cong x₁ x₃) = 
+  PE.cong (_· _) (reduction-deterministic x x₁)
 
 -- Reduction to WHNF is deterministic.
 
-reduction↘whnf-det : Γ ⊢ t ↘ t′ ∷ A → Γ ⊢ t ↘ t″ ∷ B → t′ PE.≡ t″
-reduction↘whnf-det ([] , w) ([] , w₁) = PE.refl
-reduction↘whnf-det ([] , w) (x₁ ∷ xs₁ , w₁) = ⊥-elim (no-whnf-reduction x₁ w)
-reduction↘whnf-det (x ∷ xs ,  w) ([] , w₁) = ⊥-elim (no-whnf-reduction x w₁)
-reduction↘whnf-det (x ∷ xs , w) (x₁ ∷ xs₁ , w₁) = 
-  reduction↘whnf-det (xs , w) (PE.subst (_ ⊢_↘ _ ∷ _) (reduction-det x₁ x) (xs₁ , w₁)) 
+reduction↘whnf-deterministic : Γ ⊢ t ↘ t′ ∷ A → Γ ⊢ t ↘ t″ ∷ B → t′ PE.≡ t″
+reduction↘whnf-deterministic ([] , w) ([] , w₁) = PE.refl
+reduction↘whnf-deterministic ([] , w) (x₁ ∷ xs₁ , w₁) = 
+  ⊥-elim (no-whnf-reduction x₁ w)
+reduction↘whnf-deterministic (x ∷ xs ,  w) ([] , w₁) = 
+  ⊥-elim (no-whnf-reduction x w₁)
+reduction↘whnf-deterministic (x ∷ xs , w) (x₁ ∷ xs₁ , w₁) = 
+  reduction↘whnf-deterministic (xs , w) 
+    (PE.subst (_ ⊢_↘ _ ∷ _) (reduction-deterministic x₁ x) (xs₁ , w₁)) 
 
 -- Reduction is subsumed by equality.
 
@@ -144,15 +149,22 @@ mutual
 -- Term of reduction is well typed.
 
 reduction-subject-typing : Γ ⊢ t ⇒ t′ ∷ A → Γ ⊢ t ∷ A
-reduction-subject-typing = equality-subject-typing ∘ equality-subsumes-reduction
+reduction-subject-typing = 
+  equality-subject-typing ∘ equality-subsumes-reduction
 
 -- Reduction preserves typing.
 
 reduction-preserves-typing : Γ ⊢ t ⇒ t′ ∷ A → Γ ⊢ t′ ∷ A
-reduction-preserves-typing = equality-preserves-typing ∘ equality-subsumes-reduction
+reduction-preserves-typing = 
+  equality-preserves-typing ∘ equality-subsumes-reduction
+
+-- Equality is decidable.
+
+equality-decidable : Γ ⊢ t ∷ A → Γ ⊢ t₁ ∷ A → Dec (Γ ⊢ t ≡ t₁ ∷ A)
+equality-decidable ⊢t ⊢t₁ = {! !}
 
 -- Weak Head Normalization Theorem: all well-typed terms can be reduced to 
 -- whnf.
 
 whn : Γ ⊢ t ∷ A → ∃ λ t′ → Whnf t′ × Γ ⊢ t ⇒* t′ ∷ A
-whn = ?
+whn = {! !}
