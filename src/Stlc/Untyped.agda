@@ -113,11 +113,11 @@ data Con : ℕ → Set where
 
 mutual
   data Ne {n} : Term n → Set where
-    var : (x : Fin n) → Ne (var x)
-    app : Ne t → Ne (t · t₁)
+    var : ∀ {x} → Ne (var x)
+    app : ∀ {t} → Ne t → Ne (t · t₁)
 
   data Whnf {n} : Term n → Set where
-    ne   : Ne t → Whnf t
-    lam  : Whnf (lam t)
+    ne   : ∀ {t} → Ne t → Whnf t
+    lam  : ∀ {t} → Whnf (lam t)
     zero : Whnf zero
-    suc  : Whnf (suc t)
+    suc  : ∀ {t} → Whnf (suc t)

@@ -4,8 +4,8 @@ module Stlc.Typed where
 open import Data.Nat using (ℕ)
 open import Data.Fin using (Fin; zero; suc)
 open import Relation.Binary.Construct.Closure.ReflexiveTransitive 
-  using (Star)
-  renaming (ε to []; _◅_ to _∷_)
+  using (ε; Star)
+  renaming (_◅_ to _◃_)
 import Relation.Binary.PropositionalEquality as PE
 open import Data.Product using (_×_; _,_)
 
@@ -13,7 +13,7 @@ open import Stlc.Untyped
 
 private variable
   m n            : ℕ
-  A B            : Type
+  A B C          : Type
   t t′ t″ t₁ t₁′ : Term _
   Γ Δ Δ₁         : Con _
   x              : Fin _
@@ -142,7 +142,6 @@ id ∙ₜ η₁ = η₁
 ⇑ η ∙ₜ (↑ η₁) = ↑ (η ∙ₜ η₁)
 ⇑ η ∙ₜ (⇑ η₁) = ⇑ (η ∙ₜ η₁)
 
-
 wkVarₜ : ρ ∷ Δ ≤ Γ → x ∷ A ∈ Γ → wkVar ρ x ∷ A ∈ Δ
 wkVarₜ id x∈ = x∈
 wkVarₜ (↑ η) x∈ = there (wkVarₜ η x∈)
@@ -185,4 +184,3 @@ consSubstₜ = _▹_
 
 sgSubstₜ : Γ ⊢ t ∷ A → Γ ⊢ˢ sgSubst t ∷ Γ ▹ A
 sgSubstₜ = consSubstₜ idSubstₜ
-

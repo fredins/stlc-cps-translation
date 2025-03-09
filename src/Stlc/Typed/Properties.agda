@@ -4,8 +4,8 @@ module Stlc.Typed.Properties where
 open import Data.Nat using (ℕ)
 open import Data.Fin using (Fin; zero; suc)
 open import Relation.Binary.Construct.Closure.ReflexiveTransitive 
-  using (Star)
-  renaming (ε to []; _◅_ to _∷_)
+  using (Star; ε)
+  renaming (_◅_ to _◃_)
 import Relation.Binary.PropositionalEquality as PE
 open PE.≡-Reasoning
 open import Data.Empty using (⊥-elim)
@@ -104,12 +104,12 @@ reduction-deterministic (·-cong x x₂) (·-cong x₁ x₃) =
 -- Reduction to WHNF is deterministic.
 
 reduction↘whnf-deterministic : Γ ⊢ t ↘ t′ ∷ A → Γ ⊢ t ↘ t″ ∷ B → t′ PE.≡ t″
-reduction↘whnf-deterministic ([] , w) ([] , w₁) = PE.refl
-reduction↘whnf-deterministic ([] , w) (x₁ ∷ xs₁ , w₁) = 
+reduction↘whnf-deterministic (ε , w) (ε , w₁) = PE.refl
+reduction↘whnf-deterministic (ε , w) (x₁ ◃ xs₁ , w₁) = 
   ⊥-elim (no-whnf-reduction x₁ w)
-reduction↘whnf-deterministic (x ∷ xs ,  w) ([] , w₁) = 
+reduction↘whnf-deterministic (x ◃ xs ,  w) (ε , w₁) = 
   ⊥-elim (no-whnf-reduction x w₁)
-reduction↘whnf-deterministic (x ∷ xs , w) (x₁ ∷ xs₁ , w₁) = 
+reduction↘whnf-deterministic (x ◃ xs , w) (x₁ ◃ xs₁ , w₁) = 
   reduction↘whnf-deterministic (xs , w) 
     (PE.subst (_ ⊢_↘ _ ∷ _) (reduction-deterministic x₁ x) (xs₁ , w₁)) 
 
@@ -166,5 +166,5 @@ equality-decidable ⊢t ⊢t₁ = {! !}
 -- Weak Head Normalization Theorem: all well-typed terms can be reduced to 
 -- whnf.
 
-whn : Γ ⊢ t ∷ A → ∃ λ t′ → Whnf t′ × Γ ⊢ t ⇒* t′ ∷ A
-whn = {! !}
+wh-normalization : Γ ⊢ t ∷ A → ∃ λ t′ → Whnf t′ × Γ ⊢ t ⇒* t′ ∷ A
+wh-normalization ⊢t = ?
